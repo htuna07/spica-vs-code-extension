@@ -75,6 +75,12 @@
         "icon": "$(edit)"
       },
       {
+        "command": "spica.openJsonEditor",
+        "title": "Open JSON Editor",
+        "category": "Spica",
+        "icon": "$(symbol-namespace)"
+      },
+      {
         "command": "spica.deleteResource",
         "title": "Delete",
         "category": "Spica",
@@ -89,7 +95,7 @@
         "command": "spica.viewLogs",
         "title": "View Logs",
         "category": "Spica",
-        "icon": "$(output)"
+        "icon": "$(debug)"
       }
     ],
     "menus": {
@@ -122,8 +128,8 @@
           "group": "inline@3"
         },
         {
-          "command": "spica.deleteResource",
-          "when": "view == spicaExplorer && viewItem =~ /deletable/",
+          "command": "spica.openJsonEditor",
+          "when": "view == spicaExplorer && viewItem =~ /json-editable/",
           "group": "inline@4"
         },
         {
@@ -132,9 +138,9 @@
           "group": "inline@5"
         },
         {
-          "command": "spica.clearLogs",
-          "when": "view == spicaExplorer && viewItem =~ /loggable/",
-          "group": "inline@6"
+          "command": "spica.deleteResource",
+          "when": "view == spicaExplorer && viewItem =~ /deletable/",
+          "group": "inline@99"
         }
       ]
     }

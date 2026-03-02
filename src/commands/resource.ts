@@ -74,6 +74,29 @@ export async function editResourceCommand(item: SpicaTreeItem): Promise<void> {
 }
 
 /**
+ * Open a Bucket or Function resource as raw JSON in the VS Code editor.
+ * Saving the document triggers an update via the spica: file system provider.
+ */
+export async function openJsonEditorCommand(
+  item: SpicaTreeItem,
+): Promise<void> {
+  if (!item?.data?.resourceId) {
+    return;
+  }
+
+  const { moduleType, resourceId } = item.data;
+  const uri = SpicaFileSystemProvider.buildUri(moduleType, resourceId!);
+
+  try {
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.languages.setTextDocumentLanguage(doc, "json");
+    await vscode.window.showTextDocument(doc, { preview: false });
+  } catch (err) {
+    showApiError(err, "Failed to open JSON editor");
+  }
+}
+
+/**
  * Delete a resource with confirmation.
  */
 export async function deleteResourceCommand(

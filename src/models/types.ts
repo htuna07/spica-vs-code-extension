@@ -198,6 +198,53 @@ export interface FunctionLog {
   level: number;
 }
 
+// ── Function Information (dynamic runtime data) ───────────────────────────
+
+export interface FunctionEnqueuerDescription {
+  icon: string;
+  name: string;
+  title: string;
+  description: string;
+}
+
+export interface FunctionEnqueuerOptionProperty {
+  title?: string;
+  description?: string;
+  type: string;
+  enum?: string[];
+  viewEnum?: string[];
+  default?: unknown;
+  examples?: string[];
+  pattern?: string;
+}
+
+export interface FunctionEnqueuerOptions {
+  $id?: string;
+  title?: string;
+  description?: string;
+  type: string;
+  required?: string[];
+  properties: Record<string, FunctionEnqueuerOptionProperty>;
+  additionalProperties?: boolean;
+}
+
+export interface FunctionEnqueuer {
+  description: FunctionEnqueuerDescription;
+  options: FunctionEnqueuerOptions;
+}
+
+export interface FunctionRuntime {
+  name: string;
+  title: string;
+  description: string;
+}
+
+export interface FunctionInformation {
+  enqueuers: FunctionEnqueuer[];
+  runtimes: FunctionRuntime[];
+  timeout: number;
+}
+
 // ── Environment Variables ─────────────────────────────────────────────────
 
 export interface EnvVar {

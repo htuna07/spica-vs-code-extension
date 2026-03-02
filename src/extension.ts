@@ -16,10 +16,14 @@ import {
   openResourceCommand,
   editResourceCommand,
   deleteResourceCommand,
+  openJsonEditorCommand,
 } from "./commands/resource.js";
 import { refreshCommand } from "./commands/refresh.js";
 import { viewLogsCommand, disposeLogChannels } from "./commands/logs.js";
-import { addResourceCommand } from "./views/form-panel.js";
+import {
+  addResourceCommand,
+  editResourceFormCommand,
+} from "./views/form-panel";
 import { SpicaTreeItem } from "./models/tree-node.js";
 
 let treeProvider: SpicaTreeProvider;
@@ -77,7 +81,22 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "spica.editResource",
-      (item: SpicaTreeItem) => editResourceCommand(item),
+      async (item: SpicaTreeItem) => {
+        // Use structured form for Policies, Buckets, Functions; raw JSON for others
+        const mt = item?.data?.moduleType;
+        if (mt === "policies" || mt === "buckets" || mt === "functions") {
+          await editResourceFormCommand(item, treeProvider);
+        } else {
+          await editResourceCommand(item);
+        }
+      },
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "spica.openJsonEditor",
+      (item: SpicaTreeItem) => openJsonEditorCommand(item),
     ),
   );
 

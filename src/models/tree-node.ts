@@ -73,6 +73,12 @@ export class SpicaTreeItem extends vscode.TreeItem {
         if (this.data.moduleType === ModuleType.Functions) {
           parts.push("loggable");
         }
+        if (
+          this.data.moduleType === ModuleType.Buckets ||
+          this.data.moduleType === ModuleType.Functions
+        ) {
+          parts.push("json-editable");
+        }
         break;
       case NodeType.SubModule:
         parts.push("submodule", "refreshable");
@@ -89,13 +95,17 @@ export class SpicaTreeItem extends vscode.TreeItem {
         ) {
           parts.push("deletable");
         }
-        // Simple resources (policies, env vars, secrets) are deletable and editable via click
+        // Simple resources (policies, env vars, secrets) are deletable
         if (
           this.data.moduleType === ModuleType.Policies ||
           this.data.moduleType === ModuleType.EnvVars ||
           this.data.moduleType === ModuleType.Secrets
         ) {
           parts.push("deletable");
+        }
+        // Policies are also editable via the structured form
+        if (this.data.moduleType === ModuleType.Policies) {
+          parts.push("editable");
         }
         break;
     }

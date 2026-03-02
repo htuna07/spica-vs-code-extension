@@ -1,7 +1,17 @@
 import { SpicaClient } from "./client.js";
-import type { SpicaFunction, FunctionInput } from "../models/types.js";
+import type {
+  SpicaFunction,
+  FunctionInput,
+  FunctionInformation,
+} from "../models/types.js";
 
 const client = SpicaClient.instance;
+
+// ── Function Information (dynamic) ──────────────────────────────────
+
+export async function getFunctionInformation(): Promise<FunctionInformation> {
+  return client.get<FunctionInformation>("/function/information");
+}
 
 export async function listFunctions(): Promise<SpicaFunction[]> {
   const result = await client.get<unknown>("/function");
