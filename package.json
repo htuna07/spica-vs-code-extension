@@ -1,0 +1,155 @@
+{
+  "name": "spica-vscode",
+  "displayName": "Spica",
+  "description": "Manage your Spica backend engine resources directly from VS Code",
+  "version": "0.1.0",
+  "publisher": "teknodev",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "icon": "resources/spica-icon.png",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "spica",
+          "title": "Spica",
+          "icon": "resources/spica.svg"
+        }
+      ]
+    },
+    "views": {
+      "spica": [
+        {
+          "id": "spicaWelcome",
+          "name": "Welcome",
+          "when": "!spica:connected"
+        },
+        {
+          "id": "spicaExplorer",
+          "name": "Explorer",
+          "when": "spica:connected"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "spicaWelcome",
+        "contents": "Connect to a Spica server to manage your resources.\n[Connect to Spica](command:spica.connect)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "spica.connect",
+        "title": "Connect to Spica",
+        "category": "Spica",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "spica.disconnect",
+        "title": "Disconnect from Spica",
+        "category": "Spica",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "spica.refresh",
+        "title": "Refresh",
+        "category": "Spica",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "spica.addResource",
+        "title": "Add",
+        "category": "Spica",
+        "icon": "$(add)"
+      },
+      {
+        "command": "spica.editResource",
+        "title": "Edit",
+        "category": "Spica",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "spica.deleteResource",
+        "title": "Delete",
+        "category": "Spica",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "spica.openResource",
+        "title": "Open Resource",
+        "category": "Spica"
+      },
+      {
+        "command": "spica.viewLogs",
+        "title": "View Logs",
+        "category": "Spica",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "spica.disconnect",
+          "when": "view == spicaExplorer",
+          "group": "navigation@99"
+        },
+        {
+          "command": "spica.refresh",
+          "when": "view == spicaExplorer",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "spica.refresh",
+          "when": "view == spicaExplorer && viewItem =~ /refreshable/",
+          "group": "inline@1"
+        },
+        {
+          "command": "spica.addResource",
+          "when": "view == spicaExplorer && viewItem =~ /addable/",
+          "group": "inline@2"
+        },
+        {
+          "command": "spica.editResource",
+          "when": "view == spicaExplorer && viewItem =~ /editable/",
+          "group": "inline@3"
+        },
+        {
+          "command": "spica.deleteResource",
+          "when": "view == spicaExplorer && viewItem =~ /deletable/",
+          "group": "inline@4"
+        },
+        {
+          "command": "spica.viewLogs",
+          "when": "view == spicaExplorer && viewItem =~ /loggable/",
+          "group": "inline@5"
+        },
+        {
+          "command": "spica.clearLogs",
+          "when": "view == spicaExplorer && viewItem =~ /loggable/",
+          "group": "inline@6"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "lint": "eslint src --ext ts",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}
