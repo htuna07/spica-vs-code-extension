@@ -450,11 +450,64 @@ function buildBucketPayload(data: Record<string, unknown>) {
     if ((t === "array" || t === "multiselect") && p.itemsType) {
       prop.items = { type: p.itemsType as string };
     }
+    // Enum values — may be a string from the form or already an array (existing data)
+    if (Array.isArray(p.enum) && (p.enum as unknown[]).length > 0) {
+      prop.enum = p.enum;
+    } else if (typeof p.enum === "string" && p.enum.trim()) {
+      prop.enum = p.enum
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+    }
+    // Default value
+    if (p.default !== undefined && p.default !== "") {
+      prop.default = p.default;
+    }
+    // Options: translate / history
+    const optTranslate = p.optTranslate === true || p.optTranslate === "true";
+    const optHistory = p.optHistory === true || p.optHistory === "true";
+    if (optTranslate || optHistory) {
+      prop.options = {
+        ...(optTranslate ? { translate: true } : {}),
+        ...(optHistory ? { history: true } : {}),
+      };
+    }
     if (p.isRequired === true || p.isRequired === "true") {
       requiredKeys.push(key);
     }
     properties[key] = prop;
   }
+  // Document settings
+  const countLimitRaw = data.countLimit;
+  const countLimit =
+    typeof countLimitRaw === "string" && countLimitRaw !== ""
+      ? Number(countLimitRaw)
+      : undefined;
+  const limitExceedBehaviour =
+    (data.limitExceedBehaviour as string) || undefined;
+  const documentSettings =
+    countLimit !== undefined || limitExceedBehaviour
+      ? {
+          ...(countLimit === undefined ? {} : { countLimit }),
+          ...(limitExceedBehaviour
+            ? {
+                limitExceedBehaviour: limitExceedBehaviour as
+                  | "prevent"
+                  | "remove",
+              }
+            : {}),
+        }
+      : undefined;
+
+  // ACL
+  const aclRead = (data.aclRead as string) || "true==true";
+  const aclWrite = (data.aclWrite as string) || "true==true";
+
+  const rawOrder =
+    data.order !== "" && data.order !== undefined && data.order !== null
+      ? Number(data.order)
+      : undefined;
+  const orderVal = Number.isNaN(rawOrder) ? undefined : rawOrder;
 
   return {
     title: data.title as string,
@@ -463,6 +516,10 @@ function buildBucketPayload(data: Record<string, unknown>) {
     history: data.history === true || data.history === "true",
     readOnly: data.readOnly === true || data.readOnly === "true",
     primary: (data.primary as string) || undefined,
+    ...(data.category ? { category: data.category as string } : {}),
+    ...(orderVal === undefined ? {} : { order: orderVal }),
+    acl: { read: aclRead, write: aclWrite },
+    ...(documentSettings ? { documentSettings } : {}),
     properties,
     ...(requiredKeys.length ? { required: requiredKeys } : {}),
   };
@@ -830,7 +887,27 @@ function buildBucketFormBody(existing?: Record<string, unknown>): string {
   const history = existing?.history === true;
   const readOnly = existing?.readOnly === true;
   const primary = (existing?.primary as string) || "";
+  const category = (existing?.category as string) || "";
+  const order =
+    typeof existing?.order === "number" ? String(existing.order) : "";
 
+  // ACL
+  const acl = existing?.acl as Record<string, string> | undefined;
+  const aclRead = acl?.read ?? "true==true";
+  const aclWrite = acl?.write ?? "true==true";
+
+  // Document settings
+  const docSettings = existing?.documentSettings as
+    | Record<string, unknown>
+    | undefined;
+  const countLimit =
+    typeof docSettings?.countLimit === "number"
+      ? String(docSettings.countLimit)
+      : "";
+  const limitExceedBehaviour =
+    (docSettings?.limitExceedBehaviour as string) || "";
+
+  // Properties
   const existingProps = existing?.properties as
     | Record<string, Record<string, unknown>>
     | undefined;
@@ -871,6 +948,16 @@ function buildBucketFormBody(existing?: Record<string, unknown>): string {
       <textarea id="description" name="description" required placeholder="A short description" rows="2" minlength="5" maxlength="250">${esc(description)}</textarea>
     </div>
     <div class="field-row">
+      <div class="field">
+        <label for="category">Category</label>
+        <input type="text" id="category" name="category" placeholder="e.g. Content" value="${esc(category)}" />
+      </div>
+      <div class="field">
+        <label for="order">Order</label>
+        <input type="number" id="order" name="order" placeholder="0" value="${esc(order)}" />
+      </div>
+    </div>
+    <div class="field-row">
       <div class="field checkbox">
         <label><input type="checkbox" id="history" name="history" ${history ? "checked" : ""} /> Enable History</label>
       </div>
@@ -882,6 +969,35 @@ function buildBucketFormBody(existing?: Record<string, unknown>): string {
       <label for="primary">Primary Field</label>
       <input type="text" id="primary" name="primary" placeholder="Property key to use as primary" value="${esc(primary)}" />
       <span class="hint">The property key that identifies documents (e.g., "title")</span>
+    </div>
+    <h3 class="section-label">Access Control</h3>
+    <div class="field-row">
+      <div class="field">
+        <label for="aclRead">Read Rule</label>
+        <input type="text" id="aclRead" name="aclRead" placeholder="true==true" value="${esc(aclRead)}" />
+        <span class="hint">ACL expression for read access (e.g. true==true)</span>
+      </div>
+      <div class="field">
+        <label for="aclWrite">Write Rule</label>
+        <input type="text" id="aclWrite" name="aclWrite" placeholder="true==true" value="${esc(aclWrite)}" />
+        <span class="hint">ACL expression for write access</span>
+      </div>
+    </div>
+    <h3 class="section-label">Document Settings</h3>
+    <div class="field-row">
+      <div class="field">
+        <label for="countLimit">Count Limit</label>
+        <input type="number" id="countLimit" name="countLimit" min="1" placeholder="No limit" value="${esc(countLimit)}" />
+        <span class="hint">Maximum number of documents allowed</span>
+      </div>
+      <div class="field">
+        <label for="limitExceedBehaviour">Limit Exceed Behaviour</label>
+        <select id="limitExceedBehaviour" name="limitExceedBehaviour">
+          <option value="" ${limitExceedBehaviour === "" ? "selected" : ""}>(none)</option>
+          <option value="prevent" ${limitExceedBehaviour === "prevent" ? "selected" : ""}>Prevent</option>
+          <option value="remove" ${limitExceedBehaviour === "remove" ? "selected" : ""}>Remove Oldest</option>
+        </select>
+      </div>
     </div>
     <div class="repeatable-section" id="propertiesSection">
       <div class="section-header">
@@ -914,6 +1030,14 @@ function buildBucketPropertyEntry(
   const relationType = (data?.relationType as string) || "onetoone";
   const dependent = data?.dependent === true;
   const itemsType = (data?.items as Record<string, unknown>)?.type || "string";
+  const enumValues = Array.isArray(data?.enum)
+    ? (data.enum as unknown[]).join(", ")
+    : "";
+  const defaultValue =
+    data?.default != null ? String(data.default as string) : "";
+  const optionsObj = data?.options as Record<string, unknown> | undefined;
+  const translateOption = optionsObj?.translate === true;
+  const historyOption = optionsObj?.history === true;
 
   const typeOptions = [
     "string",
@@ -1027,6 +1151,23 @@ function buildBucketPropertyEntry(
             <select data-field="itemsType">
               ${["string", "number", "boolean", "object", "date"].map((t) => `<option value="${t}" ${t === itemsType ? "selected" : ""}>${t}</option>`).join("")}
             </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Default Value</label>
+          <input type="text" data-field="default" placeholder="Default value" value="${esc(defaultValue)}" />
+        </div>
+        <div class="field">
+          <label>Enum Values</label>
+          <input type="text" data-field="enum" placeholder="val1, val2, val3" value="${esc(enumValues)}" />
+          <span class="hint">Comma-separated allowed values (leave empty to allow any)</span>
+        </div>
+        <div class="field-row">
+          <div class="field checkbox">
+            <label><input type="checkbox" data-field="optTranslate" ${translateOption ? "checked" : ""} /> Translatable</label>
+          </div>
+          <div class="field checkbox">
+            <label><input type="checkbox" data-field="optHistory" ${historyOption ? "checked" : ""} /> Track History</label>
           </div>
         </div>
       </div>
@@ -1327,6 +1468,11 @@ const STRUCTURED_STYLES = `<style>
     margin-top: 8px; padding: 8px; border-top: 1px dashed var(--border);
   }
   .trigger-options h3 { margin-top: 0; }
+  .section-label {
+    font-size: 0.8em; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--subtle);
+    margin: 16px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  }
 </style>`;
 
 // ─────────────────────────────────────────────────────────────────────
@@ -1586,6 +1732,23 @@ function buildStructuredFormScript(
               <div class="field">
                 <label>Items Type</label>
                 <select data-field="itemsType">\${itemsOptHtml}</select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Default Value</label>
+              <input type="text" data-field="default" placeholder="Default value" />
+            </div>
+            <div class="field">
+              <label>Enum Values</label>
+              <input type="text" data-field="enum" placeholder="val1, val2, val3" />
+              <span class="hint">Comma-separated allowed values (leave empty to allow any)</span>
+            </div>
+            <div class="field-row">
+              <div class="field checkbox">
+                <label><input type="checkbox" data-field="optTranslate" /> Translatable</label>
+              </div>
+              <div class="field checkbox">
+                <label><input type="checkbox" data-field="optHistory" /> Track History</label>
               </div>
             </div>
           </div>
