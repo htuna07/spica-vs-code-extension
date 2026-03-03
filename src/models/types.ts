@@ -172,8 +172,7 @@ export interface SpicaFunction {
   language: "typescript" | "javascript";
   timeout: number;
   triggers: Record<string, FunctionTrigger>;
-  env_vars?: string[];
-  secrets?: string[];
+  env?: {};
   category?: string;
   order?: number;
 }
@@ -243,30 +242,4 @@ export interface FunctionInformation {
   enqueuers: FunctionEnqueuer[];
   runtimes: FunctionRuntime[];
   timeout: number;
-}
-
-// ── Environment Variables ─────────────────────────────────────────────────
-
-export interface EnvVar {
-  _id: string;
-  key: string;
-  value: string;
-}
-
-export interface EnvVarInput {
-  key: string;
-  value: string;
-}
-
-// ── Secrets ───────────────────────────────────────────────────────────────
-
-export interface Secret {
-  _id: string;
-  key: string;
-  value: string;
-}
-
-export interface SecretInput {
-  key: string;
-  value: string;
 }

@@ -16,8 +16,6 @@ import {
   updateFunctionIndex,
 } from "../api/functions.js";
 import { getPolicy, updatePolicy } from "../api/policies.js";
-import { getEnvVar, updateEnvVar } from "../api/env-vars.js";
-import { getSecret, updateSecret } from "../api/secrets.js";
 
 /**
  * URI format:
@@ -26,8 +24,6 @@ import { getSecret, updateSecret } from "../api/secrets.js";
  *   spica:/functions/{id}.json
  *   spica:/functions/{id}/index.ts
  *   spica:/policies/{id}.json
- *   spica:/env-vars/{id}.json
- *   spica:/secrets/{id}.json
  */
 
 interface ParsedUri {
@@ -52,12 +48,6 @@ function parseUri(uri: vscode.Uri): ParsedUri {
       break;
     case "policies":
       moduleType = ModuleType.Policies;
-      break;
-    case "env-vars":
-      moduleType = ModuleType.EnvVars;
-      break;
-    case "secrets":
-      moduleType = ModuleType.Secrets;
       break;
     default:
       throw new Error(`Unknown module: ${modStr}`);
@@ -181,14 +171,6 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
         const policy = await getPolicy(parsed.resourceId);
         return JSON.stringify(policy, null, 2);
       }
-      case ModuleType.EnvVars: {
-        const envVar = await getEnvVar(parsed.resourceId);
-        return JSON.stringify(envVar, null, 2);
-      }
-      case ModuleType.Secrets: {
-        const secret = await getSecret(parsed.resourceId);
-        return JSON.stringify(secret, null, 2);
-      }
       default:
         throw new Error(`Unknown module type: ${parsed.moduleType}`);
     }
@@ -223,18 +205,6 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
         await updatePolicy(parsed.resourceId, input);
         return;
       }
-      case ModuleType.EnvVars: {
-        const envData = JSON.parse(text);
-        const { _id, ...input } = envData;
-        await updateEnvVar(parsed.resourceId, input);
-        return;
-      }
-      case ModuleType.Secrets: {
-        const secretData = JSON.parse(text);
-        const { _id, ...input } = secretData;
-        await updateSecret(parsed.resourceId, input);
-        return;
-      }
     }
   }
 
@@ -257,12 +227,6 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
         break;
       case ModuleType.Policies:
         modPath = "policies";
-        break;
-      case ModuleType.EnvVars:
-        modPath = "env-vars";
-        break;
-      case ModuleType.Secrets:
-        modPath = "secrets";
         break;
     }
 

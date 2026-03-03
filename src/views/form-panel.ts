@@ -15,8 +15,6 @@ import {
   addFunctionDependencies,
 } from "../api/functions.js";
 import { createPolicy, updatePolicy, getPolicy } from "../api/policies.js";
-import { createEnvVar } from "../api/env-vars.js";
-import { createSecret } from "../api/secrets.js";
 
 import type {
   FunctionInformation,
@@ -295,10 +293,6 @@ function getFormTitle(moduleType: ModuleType): string | null {
       return "Function";
     case ModuleType.Policies:
       return "Policy";
-    case ModuleType.EnvVars:
-      return "Environment Variable";
-    case ModuleType.Secrets:
-      return "Secret";
     default:
       return null;
   }
@@ -319,18 +313,6 @@ async function createResource(
     }
     case ModuleType.Policies:
       await createPolicy(buildPolicyPayload(data));
-      return;
-    case ModuleType.EnvVars:
-      await createEnvVar({
-        key: data.key as string,
-        value: data.value as string,
-      });
-      return;
-    case ModuleType.Secrets:
-      await createSecret({
-        key: data.key as string,
-        value: data.value as string,
-      });
       return;
   }
 }
@@ -560,10 +542,7 @@ function buildFunctionPayload(
     language: (data.language as "typescript" | "javascript") || "typescript",
     timeout: Number(data.timeout) || 120,
     triggers,
-    env: {}, // server-managed fields that the form doesn’t edit
-    // Preserve server-managed fields that the form doesn’t edit
-    // env_vars: (existing?.env_vars as string[]) ?? [],
-    // secrets: (existing?.secrets as string[]) ?? [],
+    env: {},
   };
 
   if (existing?.category !== undefined) {
@@ -743,12 +722,6 @@ function buildStructuredFormHtml(
     case ModuleType.Functions:
       formBody = buildFunctionFormBody(functionInfo, existingData);
       break;
-    case ModuleType.EnvVars:
-      formBody = buildEnvVarBody(existingData);
-      break;
-    case ModuleType.Secrets:
-      formBody = buildSecretBody(existingData);
-      break;
     default:
       formBody = "";
   }
@@ -774,32 +747,6 @@ function buildStructuredFormHtml(
   ${buildStructuredFormScript(moduleType, functionInfo)}
 </body>
 </html>`;
-}
-
-// ── Simple module bodies ────────────────────────────────────────────
-
-function buildEnvVarBody(existing?: Record<string, unknown>): string {
-  return `
-    <div class="field">
-      <label for="key">Key<span class="req">*</span></label>
-      <input type="text" id="key" name="key" required placeholder="API_URL" value="${esc((existing?.key as string) || "")}" />
-    </div>
-    <div class="field">
-      <label for="value">Value<span class="req">*</span></label>
-      <input type="text" id="value" name="value" required placeholder="https://..." value="${esc((existing?.value as string) || "")}" />
-    </div>`;
-}
-
-function buildSecretBody(existing?: Record<string, unknown>): string {
-  return `
-    <div class="field">
-      <label for="key">Key<span class="req">*</span></label>
-      <input type="text" id="key" name="key" required placeholder="DB_PASSWORD" value="${esc((existing?.key as string) || "")}" />
-    </div>
-    <div class="field">
-      <label for="value">Value<span class="req">*</span></label>
-      <input type="text" id="value" name="value" required placeholder="s3cr3t" value="${esc((existing?.value as string) || "")}" />
-    </div>`;
 }
 
 // ── Policy form body ────────────────────────────────────────────────

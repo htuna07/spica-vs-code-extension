@@ -5,7 +5,7 @@ Manage your [Spica](https://spicaengine.com/) backend engine resources directly 
 ## Features
 
 - **Connect** to any Spica server via API Key or Identity (username/password) authentication
-- **Browse** all resources in a sidebar tree view: Buckets, Functions, Policies, Environment Variables, Secrets
+- **Browse** all resources in a sidebar tree view: Buckets, Functions, Policies
 - **Open & Edit** any resource directly in the VS Code editor — save to update on the server
 - **Create** new resources via intuitive webview forms
 - **Delete** resources with confirmation dialog
@@ -38,10 +38,6 @@ Functions
 │       └── ...
 Policies
 ├── AdminPolicy         → click to edit, three-dot to delete
-Environment Variables
-├── API_URL             → click to edit, three-dot to delete
-Secrets
-├── DB_PASSWORD         → click to edit, three-dot to delete
 ```
 
 ## Inline & Context Menu Actions

@@ -14,8 +14,6 @@ import { listBucketData } from "../api/bucket-data.js";
 import { listFunctions } from "../api/functions.js";
 import { getFunctionDependencies } from "../api/functions.js";
 import { listPolicies } from "../api/policies.js";
-import { listEnvVars } from "../api/env-vars.js";
-import { listSecrets } from "../api/secrets.js";
 
 /**
  * TreeDataProvider that renders the Spica resource hierarchy.
@@ -50,8 +48,6 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
     [ModuleType.Buckets]: "/bucket?limit=0",
     [ModuleType.Functions]: "/function?limit=0",
     [ModuleType.Policies]: "/passport/policy?limit=0",
-    [ModuleType.EnvVars]: "/env-var?limit=0",
-    [ModuleType.Secrets]: "/secret?limit=0",
   };
 
   private async getRootModules(): Promise<SpicaTreeItem[]> {
@@ -59,8 +55,6 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
       ModuleType.Buckets,
       ModuleType.Functions,
       ModuleType.Policies,
-      ModuleType.EnvVars,
-      ModuleType.Secrets,
     ];
 
     const client = SpicaClient.instance;
@@ -142,30 +136,6 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
               moduleType: ModuleType.Policies,
               resourceId: p._id,
               label: p.name || p._id,
-            }),
-        );
-      }
-      case ModuleType.EnvVars: {
-        const vars = await listEnvVars();
-        return vars.map(
-          (v) =>
-            new SpicaTreeItem({
-              nodeType: NodeType.Leaf,
-              moduleType: ModuleType.EnvVars,
-              resourceId: v._id,
-              label: v.key,
-            }),
-        );
-      }
-      case ModuleType.Secrets: {
-        const secrets = await listSecrets();
-        return secrets.map(
-          (s) =>
-            new SpicaTreeItem({
-              nodeType: NodeType.Leaf,
-              moduleType: ModuleType.Secrets,
-              resourceId: s._id,
-              label: s.key,
             }),
         );
       }

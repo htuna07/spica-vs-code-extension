@@ -10,8 +10,6 @@ import { deleteBucket } from "../api/buckets.js";
 import { deleteBucketDocument } from "../api/bucket-data.js";
 import { deleteFunction, removeFunctionDependency } from "../api/functions.js";
 import { deletePolicy } from "../api/policies.js";
-import { deleteEnvVar } from "../api/env-vars.js";
-import { deleteSecret } from "../api/secrets.js";
 
 /**
  * Open a resource in the editor via the spica: file system.
@@ -158,12 +156,6 @@ async function performDelete(
       return;
     case ModuleType.Policies:
       await deletePolicy(resourceId);
-      return;
-    case ModuleType.EnvVars:
-      await deleteEnvVar(resourceId);
-      return;
-    case ModuleType.Secrets:
-      await deleteSecret(resourceId);
       return;
   }
 }
