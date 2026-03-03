@@ -2,7 +2,7 @@
   "name": "spica-vscode",
   "displayName": "Spica",
   "description": "Manage your Spica backend engine resources directly from VS Code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "tunakucukertas",
   "engines": {
     "vscode": "^1.85.0"
