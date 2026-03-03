@@ -258,7 +258,7 @@ async function addEnvVarQuickInput(
 
   try {
     const func = await getFunction(functionId);
-    const env = { ...(func.env as Record<string, string> ?? {}) };
+    const env = { ...((func.env as Record<string, string>) ?? {}) };
     env[key.trim()] = value;
     const { _id, ...input } = func as unknown as Record<string, unknown>;
     (input as Record<string, unknown>).env = env;
@@ -287,7 +287,7 @@ export async function editEnvVarCommand(
 
   try {
     const func = await getFunction(functionId);
-    const env = { ...(func.env as Record<string, string> ?? {}) };
+    const env = { ...((func.env as Record<string, string>) ?? {}) };
     const currentValue = env[envKey] || "";
 
     const newValue = await vscode.window.showInputBox({
@@ -424,7 +424,9 @@ async function createResource(
       return;
     case ModuleType.Functions: {
       const fnPayload = buildFunctionPayload(data);
-      const created = await createFunction(fnPayload as unknown as FunctionInput);
+      const created = await createFunction(
+        fnPayload as unknown as FunctionInput,
+      );
       // Create default empty index for the function
       await updateFunctionIndex(created._id, "");
       return;
@@ -1290,9 +1292,7 @@ function buildFunctionFormBody(
   }
 
   // Environment variables
-  const existingEnv = existing?.env as
-    | Record<string, string>
-    | undefined;
+  const existingEnv = existing?.env as Record<string, string> | undefined;
   let envVarsHtml: string;
   if (existingEnv && Object.keys(existingEnv).length > 0) {
     envVarsHtml = Object.entries(existingEnv)

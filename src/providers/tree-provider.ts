@@ -10,7 +10,11 @@ import { SpicaClient } from "../api/client.js";
 // API imports
 import { listBuckets, getBucket } from "../api/buckets.js";
 import { listBucketData } from "../api/bucket-data.js";
-import { listFunctions, getFunction, getFunctionDependencies } from "../api/functions.js";
+import {
+  listFunctions,
+  getFunction,
+  getFunctionDependencies,
+} from "../api/functions.js";
 import { listPolicies } from "../api/policies.js";
 
 /**

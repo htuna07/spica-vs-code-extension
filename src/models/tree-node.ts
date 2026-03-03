@@ -51,7 +51,11 @@ export class SpicaTreeItem extends vscode.TreeItem {
     this.iconPath = this.buildIcon();
 
     // Leaf nodes get a click-to-open command (except dependencies and env vars)
-    if (data.nodeType === NodeType.Leaf && data.subKind !== "dependency" && data.subKind !== "env-var") {
+    if (
+      data.nodeType === NodeType.Leaf &&
+      data.subKind !== "dependency" &&
+      data.subKind !== "env-var"
+    ) {
       this.command = {
         command: "spica.openResource",
         title: "Open Resource",
@@ -96,7 +100,10 @@ export class SpicaTreeItem extends vscode.TreeItem {
         break;
       case NodeType.SubModule:
         parts.push("submodule", "refreshable");
-        if (this.data.subKind === "dependencies" || this.data.subKind === "environment") {
+        if (
+          this.data.subKind === "dependencies" ||
+          this.data.subKind === "environment"
+        ) {
           parts.push("addable");
         }
         break;

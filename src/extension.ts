@@ -123,9 +123,8 @@ export async function activate(
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "spica.editEnvVar",
-      (item: SpicaTreeItem) => editEnvVarCommand(item, treeProvider),
+    vscode.commands.registerCommand("spica.editEnvVar", (item: SpicaTreeItem) =>
+      editEnvVarCommand(item, treeProvider),
     ),
   );
 

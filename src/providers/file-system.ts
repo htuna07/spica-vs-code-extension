@@ -59,7 +59,10 @@ function parseUri(uri: vscode.Uri): ParsedUri {
     return { moduleType, resourceId: stripExt(segments[1]) };
   }
 
-  if (segments.length === 3 && (segments[2] === "index.ts" || segments[2] === "index.js")) {
+  if (
+    segments.length === 3 &&
+    (segments[2] === "index.ts" || segments[2] === "index.js")
+  ) {
     return {
       moduleType,
       resourceId: stripExt(segments[1]),

@@ -8,7 +8,12 @@ import { SpicaTreeProvider } from "../providers/tree-provider.js";
 // API imports for delete operations
 import { deleteBucket } from "../api/buckets.js";
 import { deleteBucketDocument } from "../api/bucket-data.js";
-import { deleteFunction, removeFunctionDependency, getFunction, replaceFunction } from "../api/functions.js";
+import {
+  deleteFunction,
+  removeFunctionDependency,
+  getFunction,
+  replaceFunction,
+} from "../api/functions.js";
 import { deletePolicy } from "../api/policies.js";
 import type { FunctionInput } from "../models/types.js";
 
@@ -26,7 +31,12 @@ export async function openResourceCommand(item: SpicaTreeItem): Promise<void> {
 
   if (subKind === "source") {
     const language = (item.data.extra?.language as string) || "typescript";
-    uri = SpicaFileSystemProvider.buildUri(moduleType, resourceId!, "source", language);
+    uri = SpicaFileSystemProvider.buildUri(
+      moduleType,
+      resourceId!,
+      "source",
+      language,
+    );
   } else if (subKind === "document" && parentId) {
     uri = SpicaFileSystemProvider.buildUri(
       moduleType,
@@ -152,7 +162,7 @@ async function performDelete(
   // Environment variable deletion
   if (subKind === "env-var" && parentId) {
     const func = await getFunction(parentId);
-    const env = { ...(func.env as Record<string, string> ?? {}) };
+    const env = { ...((func.env as Record<string, string>) ?? {}) };
     delete env[resourceId];
     const { _id, ...input } = func as unknown as Record<string, unknown>;
     (input as unknown as FunctionInput).env = env;
