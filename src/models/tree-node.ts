@@ -26,6 +26,8 @@ export interface SpicaTreeItemData {
   subKind?: string;
   /** Raw label for display */
   label: string;
+  /** Extra metadata (e.g., function language) */
+  extra?: Record<string, unknown>;
 }
 
 export class SpicaTreeItem extends vscode.TreeItem {
@@ -48,11 +50,20 @@ export class SpicaTreeItem extends vscode.TreeItem {
     // Assign icons
     this.iconPath = this.buildIcon();
 
-    // Leaf nodes get a click-to-open command (except dependencies)
-    if (data.nodeType === NodeType.Leaf && data.subKind !== "dependency") {
+    // Leaf nodes get a click-to-open command (except dependencies and env vars)
+    if (data.nodeType === NodeType.Leaf && data.subKind !== "dependency" && data.subKind !== "env-var") {
       this.command = {
         command: "spica.openResource",
         title: "Open Resource",
+        arguments: [this],
+      };
+    }
+
+    // Env var leaves get a click-to-edit-value command
+    if (data.nodeType === NodeType.Leaf && data.subKind === "env-var") {
+      this.command = {
+        command: "spica.editEnvVar",
+        title: "Edit Environment Variable",
         arguments: [this],
       };
     }
@@ -79,19 +90,23 @@ export class SpicaTreeItem extends vscode.TreeItem {
         ) {
           parts.push("json-editable");
         }
+        if (this.data.moduleType === ModuleType.Buckets) {
+          parts.push("addable");
+        }
         break;
       case NodeType.SubModule:
         parts.push("submodule", "refreshable");
-        if (this.data.subKind === "dependencies") {
+        if (this.data.subKind === "dependencies" || this.data.subKind === "environment") {
           parts.push("addable");
         }
         break;
       case NodeType.Leaf:
         parts.push("leaf");
-        // Dependency entries and bucket documents are deletable
+        // Dependency entries, bucket documents and env vars are deletable
         if (
           this.data.subKind === "dependency" ||
-          this.data.subKind === "document"
+          this.data.subKind === "document" ||
+          this.data.subKind === "env-var"
         ) {
           parts.push("deletable");
         }
@@ -119,6 +134,9 @@ export class SpicaTreeItem extends vscode.TreeItem {
         if (this.data.subKind === "dependencies") {
           return new vscode.ThemeIcon("package");
         }
+        if (this.data.subKind === "environment") {
+          return new vscode.ThemeIcon("symbol-constant");
+        }
         if (this.data.subKind === "source") {
           return new vscode.ThemeIcon("file-code");
         }
@@ -129,6 +147,9 @@ export class SpicaTreeItem extends vscode.TreeItem {
         }
         if (this.data.subKind === "dependency") {
           return new vscode.ThemeIcon("package");
+        }
+        if (this.data.subKind === "env-var") {
+          return new vscode.ThemeIcon("symbol-variable");
         }
         if (this.data.subKind === "document") {
           return new vscode.ThemeIcon("file");

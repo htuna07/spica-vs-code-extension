@@ -13,8 +13,10 @@ import {
   getFunction,
   getFunctionInformation,
   addFunctionDependencies,
+  updateFunctionIndex,
 } from "../api/functions.js";
 import { createPolicy, updatePolicy, getPolicy } from "../api/policies.js";
+import { SpicaFileSystemProvider } from "../providers/file-system.js";
 
 import type {
   FunctionInformation,
@@ -46,13 +48,19 @@ export async function addResourceCommand(
     return;
   }
 
-  // Bucket data → need the bucket schema to build the form
+  // Environment variables sub-module → two-step quick input
+  if (subKind === "environment" && resourceId) {
+    await addEnvVarQuickInput(resourceId, treeProvider);
+    return;
+  }
+
+  // Bucket data → open JSON editor for new document
   if (
     moduleType === ModuleType.Buckets &&
     item.data.nodeType === NodeType.Resource &&
     resourceId
   ) {
-    await openBucketDataForm(resourceId, treeProvider);
+    await openNewBucketDataEditor(resourceId);
     return;
   }
 
@@ -219,6 +227,114 @@ async function addDependencyQuickInput(
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Environment variable quick input (two-step: key then value)
+// ─────────────────────────────────────────────────────────────────────
+
+async function addEnvVarQuickInput(
+  functionId: string,
+  treeProvider: SpicaTreeProvider,
+): Promise<void> {
+  const key = await vscode.window.showInputBox({
+    title: "Add Environment Variable (1/2)",
+    prompt: "Enter the variable name (key)",
+    placeHolder: "MY_ENV_VAR",
+    ignoreFocusOut: true,
+  });
+
+  if (!key?.trim()) {
+    return;
+  }
+
+  const value = await vscode.window.showInputBox({
+    title: "Add Environment Variable (2/2)",
+    prompt: `Enter the value for "${key.trim()}"`,
+    placeHolder: "value",
+    ignoreFocusOut: true,
+  });
+
+  if (value === undefined) {
+    return;
+  }
+
+  try {
+    const func = await getFunction(functionId);
+    const env = { ...(func.env as Record<string, string> ?? {}) };
+    env[key.trim()] = value;
+    const { _id, ...input } = func as unknown as Record<string, unknown>;
+    (input as Record<string, unknown>).env = env;
+    await replaceFunction(functionId, input as unknown as FunctionInput);
+    showSuccess(`Environment variable "${key.trim()}" added`);
+    treeProvider.refresh();
+  } catch (err) {
+    showApiError(err, "Failed to add environment variable");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Edit environment variable value (called on click)
+// ─────────────────────────────────────────────────────────────────────
+
+export async function editEnvVarCommand(
+  item: SpicaTreeItem,
+  treeProvider: SpicaTreeProvider,
+): Promise<void> {
+  if (!item?.data?.resourceId || !item.data.parentId) {
+    return;
+  }
+
+  const envKey = item.data.resourceId;
+  const functionId = item.data.parentId;
+
+  try {
+    const func = await getFunction(functionId);
+    const env = { ...(func.env as Record<string, string> ?? {}) };
+    const currentValue = env[envKey] || "";
+
+    const newValue = await vscode.window.showInputBox({
+      title: `Edit Environment Variable: ${envKey}`,
+      prompt: `Enter new value for "${envKey}"`,
+      value: currentValue,
+      ignoreFocusOut: true,
+    });
+
+    if (newValue === undefined) {
+      return;
+    }
+
+    env[envKey] = newValue;
+    const { _id, ...input } = func as unknown as Record<string, unknown>;
+    (input as Record<string, unknown>).env = env;
+    await replaceFunction(functionId, input as unknown as FunctionInput);
+    showSuccess(`Environment variable "${envKey}" updated`);
+    treeProvider.refresh();
+  } catch (err) {
+    showApiError(err, "Failed to edit environment variable");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// New bucket data via JSON editor
+// ─────────────────────────────────────────────────────────────────────
+
+async function openNewBucketDataEditor(bucketId: string): Promise<void> {
+  const timestamp = Date.now();
+  const uri = SpicaFileSystemProvider.buildUri(
+    ModuleType.Buckets,
+    bucketId,
+    "data",
+    `new-${timestamp}`,
+  );
+
+  try {
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.languages.setTextDocumentLanguage(doc, "json");
+    await vscode.window.showTextDocument(doc, { preview: false });
+  } catch (err) {
+    showApiError(err, "Failed to open new document editor");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Bucket data form (dynamic from schema)
 // ─────────────────────────────────────────────────────────────────────
 
@@ -308,7 +424,9 @@ async function createResource(
       return;
     case ModuleType.Functions: {
       const fnPayload = buildFunctionPayload(data);
-      await createFunction(fnPayload as unknown as FunctionInput);
+      const created = await createFunction(fnPayload as unknown as FunctionInput);
+      // Create default empty index for the function
+      await updateFunctionIndex(created._id, "");
       return;
     }
     case ModuleType.Policies:
@@ -542,8 +660,25 @@ function buildFunctionPayload(
     language: (data.language as "typescript" | "javascript") || "typescript",
     timeout: Number(data.timeout) || 120,
     triggers,
-    env: {},
+    env: {} as Record<string, string>,
   };
+
+  // Collect environment variables
+  const envVarsArr = (data.envVars as Array<Record<string, unknown>>) || [];
+  const env: Record<string, string> = {};
+  for (const ev of envVarsArr) {
+    const key = (ev.envKey as string) || "";
+    const value = (ev.envValue as string) || "";
+    if (key) {
+      env[key] = value;
+    }
+  }
+  payload.env = env;
+
+  // Preserve existing env vars in edit mode if not provided in form
+  if (existing?.env && envVarsArr.length === 0) {
+    payload.env = existing.env;
+  }
 
   if (existing?.category !== undefined) {
     payload.category = existing.category;
@@ -1154,6 +1289,21 @@ function buildFunctionFormBody(
     triggersHtml = buildFunctionTriggerEntry(0, info?.enqueuers || []);
   }
 
+  // Environment variables
+  const existingEnv = existing?.env as
+    | Record<string, string>
+    | undefined;
+  let envVarsHtml: string;
+  if (existingEnv && Object.keys(existingEnv).length > 0) {
+    envVarsHtml = Object.entries(existingEnv)
+      .map(([key, value], i) =>
+        buildFunctionEnvVarEntry(i, { envKey: key, envValue: value }),
+      )
+      .join("");
+  } else {
+    envVarsHtml = "";
+  }
+
   return `
     <div class="field-row">
       <div class="field" style="flex:2">
@@ -1184,6 +1334,15 @@ function buildFunctionFormBody(
       </div>
       <div id="triggersContainer">
         ${triggersHtml}
+      </div>
+    </div>
+    <div class="repeatable-section" id="envVarsSection">
+      <div class="section-header">
+        <h2>Environment Variables</h2>
+        <button type="button" class="btn-add" onclick="addEnvVar()">+ Add Variable</button>
+      </div>
+      <div id="envVarsContainer">
+        ${envVarsHtml}
       </div>
     </div>`;
 }
@@ -1243,6 +1402,34 @@ function buildFunctionTriggerEntry(
         <div class="trigger-options" data-trigger-type="${esc(type)}">
           <h3>Options</h3>
           ${optionsHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildFunctionEnvVarEntry(
+  index: number,
+  data?: Record<string, unknown>,
+): string {
+  const envKey = (data?.envKey as string) || "";
+  const envValue = (data?.envValue as string) || "";
+
+  return `
+    <div class="repeatable-entry env-var-entry" data-index="${index}">
+      <div class="entry-header">
+        <span class="entry-title">Variable #${index + 1}</span>
+        <button type="button" class="btn-remove" onclick="removeEnvVarEntry(this)">✕</button>
+      </div>
+      <div class="entry-fields">
+        <div class="field-row">
+          <div class="field">
+            <label>Key<span class="req">*</span></label>
+            <input type="text" data-field="envKey" required placeholder="MY_VAR" value="${esc(envKey)}" />
+          </div>
+          <div class="field">
+            <label>Value</label>
+            <input type="text" data-field="envValue" placeholder="value" value="${esc(envValue)}" />
+          </div>
         </div>
       </div>
     </div>`;
@@ -1524,7 +1711,12 @@ function buildStructuredFormScript(
         errorMsg.textContent = "At least one trigger is required.";
         errorMsg.style.display = "block";
         return;
-      }`;
+      }
+
+      // Environment variables
+      const envEntries = document.querySelectorAll("#envVarsContainer .repeatable-entry");
+      data.envVars = [];
+      envEntries.forEach(entry => { data.envVars.push(collectEntryData(entry)); });`;
       break;
   }
 
@@ -1821,6 +2013,48 @@ function buildStructuredFormScript(
       }
 
       return html;
+    }
+
+    // ── Function: Add/Remove Environment Variable ───────────────────
+
+    function addEnvVar() {
+      const container = document.getElementById("envVarsContainer");
+      const index = container.children.length;
+      const html = \`
+        <div class="repeatable-entry env-var-entry" data-index="\${index}">
+          <div class="entry-header">
+            <span class="entry-title">Variable #\${index + 1}</span>
+            <button type="button" class="btn-remove" onclick="removeEnvVarEntry(this)">✕</button>
+          </div>
+          <div class="entry-fields">
+            <div class="field-row">
+              <div class="field">
+                <label>Key<span class="req">*</span></label>
+                <input type="text" data-field="envKey" required placeholder="MY_VAR" />
+              </div>
+              <div class="field">
+                <label>Value</label>
+                <input type="text" data-field="envValue" placeholder="value" />
+              </div>
+            </div>
+          </div>
+        </div>\`;
+      container.insertAdjacentHTML("beforeend", html);
+    }
+
+    function removeEnvVarEntry(btn) {
+      const entry = btn.closest(".repeatable-entry");
+      const container = entry.parentElement;
+      entry.remove();
+      // Renumber remaining entries
+      const entries = container.querySelectorAll(".repeatable-entry");
+      entries.forEach((e, i) => {
+        e.dataset.index = i;
+        const title = e.querySelector(".entry-title");
+        if (title) {
+          title.textContent = "Variable #" + (i + 1);
+        }
+      });
     }
 
     // ── Form submission ─────────────────────────────────────────────

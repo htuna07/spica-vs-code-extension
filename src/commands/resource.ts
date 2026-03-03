@@ -8,8 +8,9 @@ import { SpicaTreeProvider } from "../providers/tree-provider.js";
 // API imports for delete operations
 import { deleteBucket } from "../api/buckets.js";
 import { deleteBucketDocument } from "../api/bucket-data.js";
-import { deleteFunction, removeFunctionDependency } from "../api/functions.js";
+import { deleteFunction, removeFunctionDependency, getFunction, replaceFunction } from "../api/functions.js";
 import { deletePolicy } from "../api/policies.js";
+import type { FunctionInput } from "../models/types.js";
 
 /**
  * Open a resource in the editor via the spica: file system.
@@ -24,7 +25,8 @@ export async function openResourceCommand(item: SpicaTreeItem): Promise<void> {
   let uri: vscode.Uri;
 
   if (subKind === "source") {
-    uri = SpicaFileSystemProvider.buildUri(moduleType, resourceId!, "source");
+    const language = (item.data.extra?.language as string) || "typescript";
+    uri = SpicaFileSystemProvider.buildUri(moduleType, resourceId!, "source", language);
   } else if (subKind === "document" && parentId) {
     uri = SpicaFileSystemProvider.buildUri(
       moduleType,
@@ -41,7 +43,8 @@ export async function openResourceCommand(item: SpicaTreeItem): Promise<void> {
     // Set language for better editing experience
     let language = "json";
     if (subKind === "source") {
-      language = "typescript";
+      const funcLang = (item.data.extra?.language as string) || "typescript";
+      language = funcLang === "javascript" ? "javascript" : "typescript";
     }
     await vscode.languages.setTextDocumentLanguage(doc, language);
     await vscode.window.showTextDocument(doc, { preview: false });
@@ -143,6 +146,17 @@ async function performDelete(
   // Document deletion
   if (subKind === "document" && parentId) {
     await deleteBucketDocument(parentId, resourceId);
+    return;
+  }
+
+  // Environment variable deletion
+  if (subKind === "env-var" && parentId) {
+    const func = await getFunction(parentId);
+    const env = { ...(func.env as Record<string, string> ?? {}) };
+    delete env[resourceId];
+    const { _id, ...input } = func as unknown as Record<string, unknown>;
+    (input as unknown as FunctionInput).env = env;
+    await replaceFunction(parentId, input as unknown as FunctionInput);
     return;
   }
 

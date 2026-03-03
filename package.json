@@ -96,6 +96,11 @@
         "title": "View Logs",
         "category": "Spica",
         "icon": "$(debug)"
+      },
+      {
+        "command": "spica.editEnvVar",
+        "title": "Edit Environment Variable",
+        "category": "Spica"
       }
     ],
     "menus": {

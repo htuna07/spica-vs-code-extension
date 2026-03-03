@@ -59,7 +59,7 @@ function parseUri(uri: vscode.Uri): ParsedUri {
     return { moduleType, resourceId: stripExt(segments[1]) };
   }
 
-  if (segments.length === 3 && segments[2] === "index.ts") {
+  if (segments.length === 3 && (segments[2] === "index.ts" || segments[2] === "index.js")) {
     return {
       moduleType,
       resourceId: stripExt(segments[1]),
@@ -150,6 +150,10 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
     switch (parsed.moduleType) {
       case ModuleType.Buckets: {
         if (parsed.subKind === "data" && parsed.childId) {
+          // New document: childId starts with "new-"
+          if (parsed.childId.startsWith("new-")) {
+            return JSON.stringify({}, null, 2);
+          }
           const doc = await getBucketDocument(
             parsed.resourceId,
             parsed.childId,
@@ -181,6 +185,11 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
       case ModuleType.Buckets: {
         if (parsed.subKind === "data" && parsed.childId) {
           const doc = JSON.parse(text);
+          // New document: childId starts with "new-" → insert
+          if (parsed.childId.startsWith("new-")) {
+            await insertBucketData(parsed.resourceId, doc);
+            return;
+          }
           await replaceBucketDocument(parsed.resourceId, parsed.childId, doc);
           return;
         }
@@ -231,8 +240,9 @@ export class SpicaFileSystemProvider implements vscode.FileSystemProvider {
     }
 
     if (subKind === "source" || subKind === "index") {
+      const ext = childId === "javascript" ? "js" : "ts";
       return vscode.Uri.parse(
-        `${SPICA_SCHEME}:/${modPath}/${resourceId}/index.ts`,
+        `${SPICA_SCHEME}:/${modPath}/${resourceId}/index.${ext}`,
       );
     }
 

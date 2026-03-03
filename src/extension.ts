@@ -23,6 +23,7 @@ import { viewLogsCommand, disposeLogChannels } from "./commands/logs.js";
 import {
   addResourceCommand,
   editResourceFormCommand,
+  editEnvVarCommand,
 } from "./views/form-panel";
 import { SpicaTreeItem } from "./models/tree-node.js";
 
@@ -118,6 +119,13 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand("spica.viewLogs", (item: SpicaTreeItem) =>
       viewLogsCommand(item),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "spica.editEnvVar",
+      (item: SpicaTreeItem) => editEnvVarCommand(item, treeProvider),
     ),
   );
 

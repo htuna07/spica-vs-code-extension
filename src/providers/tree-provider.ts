@@ -8,11 +8,9 @@ import { ModuleType, MODULE_LABELS } from "../utils/constants.js";
 import { SpicaClient } from "../api/client.js";
 
 // API imports
-import { listBuckets } from "../api/buckets.js";
-import { getBucket } from "../api/buckets.js";
+import { listBuckets, getBucket } from "../api/buckets.js";
 import { listBucketData } from "../api/bucket-data.js";
-import { listFunctions } from "../api/functions.js";
-import { getFunctionDependencies } from "../api/functions.js";
+import { listFunctions, getFunction, getFunctionDependencies } from "../api/functions.js";
 import { listPolicies } from "../api/policies.js";
 
 /**
@@ -171,7 +169,8 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
         });
       }
       case ModuleType.Functions: {
-        // Function resource → show sub-modules: Source Code, Dependencies
+        // Function resource → show sub-modules: Source Code, Dependencies, Environment Variables
+        const func = await getFunction(data.resourceId!);
         return [
           new SpicaTreeItem({
             nodeType: NodeType.Leaf,
@@ -179,6 +178,7 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
             resourceId: data.resourceId,
             subKind: "source",
             label: "Source Code",
+            extra: { language: func.language || "typescript" },
           }),
           new SpicaTreeItem({
             nodeType: NodeType.SubModule,
@@ -186,6 +186,13 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
             resourceId: data.resourceId,
             subKind: "dependencies",
             label: "Dependencies",
+          }),
+          new SpicaTreeItem({
+            nodeType: NodeType.SubModule,
+            moduleType: ModuleType.Functions,
+            resourceId: data.resourceId,
+            subKind: "environment",
+            label: "Environment Variables",
           }),
         ];
       }
@@ -221,6 +228,26 @@ export class SpicaTreeProvider implements vscode.TreeDataProvider<SpicaTreeItem>
           }),
       );
     }
+
+    if (
+      data.moduleType === ModuleType.Functions &&
+      data.subKind === "environment"
+    ) {
+      const func = await getFunction(data.resourceId!);
+      const env = (func.env || {}) as Record<string, string>;
+      return Object.entries(env).map(
+        ([key, value]) =>
+          new SpicaTreeItem({
+            nodeType: NodeType.Leaf,
+            moduleType: ModuleType.Functions,
+            resourceId: key,
+            parentId: data.resourceId,
+            subKind: "env-var",
+            label: `${key}=${value}`,
+          }),
+      );
+    }
+
     return [];
   }
 }

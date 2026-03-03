@@ -183,6 +183,7 @@ export interface FunctionInput {
   language: "typescript" | "javascript";
   timeout: number;
   triggers: Record<string, FunctionTrigger>;
+  env?: Record<string, string>;
   category?: string;
   order?: number;
 }
