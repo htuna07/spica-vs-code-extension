@@ -1,69 +1,99 @@
 # Spica VS Code Extension
 
-Manage your [Spica](https://spicaengine.com/) backend engine resources directly from VS Code.
+> Manage your Spica backend resources (Buckets, Functions, Policies) from inside VS Code.
 
-## Features
+## Overview
 
-- **Connect** to any Spica server via API Key or Identity (username/password) authentication
-- **Browse** all resources in a sidebar tree view: Buckets, Functions, Policies
-- **Open & Edit** any resource directly in the VS Code editor — save to update on the server
-- **Create** new resources via intuitive webview forms
-- **Delete** resources with confirmation dialog
-- **Function source code** editing with full TypeScript/JavaScript language support
-- **Dependency management** for Functions (install/remove npm packages)
-- **Function logs** streamed to an Output Channel with clear support
-- **Auto-reconnect** on VS Code restart using securely stored credentials
+This extension provides a tree-based explorer, editors and webviews to manage a Spica backend. Key capabilities:
 
-## Getting Started
+- Connect to a Spica server using API Key or Identity (username/password).
+- Browse and manage Buckets, Functions and Policies in a sidebar tree view.
+- Edit resources (structured forms or raw JSON) and persist changes back to the server.
+- Edit function source code with TypeScript/JavaScript language support.
+- Manage function dependencies (install/remove npm packages).
+- Stream function logs to the Output Channel.
+- Auto-reconnect on VS Code restart using secure storage for credentials.
 
-1. Install the extension
-2. Click the **Spica** icon in the Activity Bar (left sidebar)
-3. Click **Connect to Spica**
-4. Enter your Spica server URL (e.g. `https://my-spica.example.com`)
-5. Choose authentication method (API Key or Identity)
-6. Enter your credentials — you're connected!
+## Installation
 
-## Tree View Structure
+- Install from the VS Code Marketplace (when published) or build a VSIX locally.
 
-```
-Buckets
-├── My Bucket           → expand to list documents, three-dot to edit/delete schema
-│   ├── doc-abc123      → click to open, three-dot to delete
-│   └── ...
-Functions
-├── myFunction          → expand to see source & deps, three-dot to edit/delete/view logs
-│   ├── Source Code     → click to edit function code
-│   └── Dependencies   → expand to see packages, + to install new
-│       ├── axios@1.6.0
-│       └── ...
-Policies
-├── AdminPolicy         → click to edit, three-dot to delete
+Local packaging example:
+
+```bash
+npm run build
+yes | npx --yes @vscode/vsce package --allow-missing-repository
 ```
 
-## Inline & Context Menu Actions
+## Quick Start
 
-| Icon        | Action                       | Appears on                           |
-| ----------- | ---------------------------- | ------------------------------------ |
-| ↻ (Refresh) | Reload children              | Module & resource nodes              |
-| + (Add)     | Create new resource          | Module nodes, Dependencies           |
-| Edit        | Open resource in editor      | Resource nodes (three-dot menu)      |
-| Delete      | Delete with confirmation     | All deletable nodes (three-dot menu) |
-| View Logs   | Show function execution logs | Function nodes (three-dot menu)      |
+1. Open the Activity Bar and click the **Spica** icon.
+2. Run the `Connect to Spica` command.
+3. Enter your Spica server URL (e.g. `https://my-spica.example.com`).
+4. Choose authentication method and provide credentials.
+5. After connecting, use the Explorer to browse, edit, create or delete resources.
+
+## Commands
+
+The extension contributes these commands (use Cmd/Ctrl+Shift+P or the tree view context menu):
+
+- `spica.connect` — Connect to a Spica server
+- `spica.disconnect` — Disconnect from the current Spica server
+- `spica.refresh` — Refresh a node or the entire explorer
+- `spica.addResource` — Create a new resource
+- `spica.editResource` — Edit the selected resource (form or raw)
+- `spica.openJsonEditor` — Open raw JSON editor for a resource
+- `spica.deleteResource` — Delete a resource (with confirmation)
+- `spica.openResource` — Open a resource in editor
+- `spica.viewLogs` — Show function logs
+- `spica.editEnvVar` — Edit environment variables for functions
+
+## Explorer Structure
+
+Top-level modules: `Buckets`, `Functions`, `Policies`.
+
+- Buckets: expand to view documents and bucket schema; edit or delete schemas.
+- Functions: expand to edit source, view/modify dependencies, and open logs.
+- Policies: open and edit policy definitions.
+
+Context menus and inline actions provide quick operations such as refresh, add, edit and delete.
 
 ## Development
 
+Prerequisites: Node.js, npm
+
+Development run:
+
 ```bash
 npm install
-npm run watch   # esbuild watch mode
-# Press F5 to launch Extension Development Host
+npm run watch    # runs esbuild in watch mode
+# In VS Code: press F5 to launch the Extension Development Host
 ```
 
-## Building
+Build for publishing:
 
 ```bash
 npm run build
 ```
 
+Notes:
+
+- Source is TypeScript and compiled with `esbuild` (see `esbuild.js`).
+- Entry point used by VS Code is `./dist/extension.js` (built from `src/`).
+
+## Contributing
+
+Contributions are welcome. Please open issues or PRs for bugs and feature requests. Follow the repository style (TypeScript + esbuild).
+
+## Troubleshooting
+
+- If the tree view does not appear, ensure the extension is activated and check the `Spica` activity bar icon.
+- For build problems, run `npm run build` and check `esbuild.js` output.
+
 ## License
 
-AGPL-3.0
+This project is licensed under AGPL-3.0.
+
+---
+
+For implementation details, see the source in the `src/` directory (commands, providers, views, and storage).
