@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { SpicaTreeItem } from "../models/tree-node.js";
-import { listFunctionLogs, clearFunctionLogs } from "../api/function-logs.js";
-import { showApiError, showSuccess } from "../utils/errors.js";
+import { streamFunctionLogs, type LogStream } from "../api/function-logs.js";
+import { showApiError } from "../utils/errors.js";
 import type { FunctionLog } from "../models/types.js";
 
 const LOG_LEVEL_NAMES: Record<number, string> = {
@@ -13,6 +13,8 @@ const LOG_LEVEL_NAMES: Record<number, string> = {
 
 // Keep a map of output channels by function id
 const channels = new Map<string, vscode.OutputChannel>();
+// Track active real-time streams by function id
+const activeStreams = new Map<string, LogStream>();
 
 function getOrCreateChannel(
   functionId: string,
@@ -33,7 +35,9 @@ function formatLog(log: FunctionLog): string {
 }
 
 /**
- * Fetch and display logs for a function in an OutputChannel.
+ * Stream real-time logs for a function in an OutputChannel.
+ * The WebSocket delivers an initial batch, then incremental inserts/updates/deletes.
+ * If a stream is already active for the function it is stopped and restarted.
  */
 export async function viewLogsCommand(item: SpicaTreeItem): Promise<void> {
   if (!item?.data?.resourceId) {
@@ -42,38 +46,55 @@ export async function viewLogsCommand(item: SpicaTreeItem): Promise<void> {
 
   const { resourceId, label } = item.data;
 
+  // Stop any existing stream for this function
+  const existing = activeStreams.get(resourceId!);
+  if (existing) {
+    existing.dispose();
+    activeStreams.delete(resourceId!);
+  }
+
+  const channel = getOrCreateChannel(resourceId!, label);
+  channel.clear();
+  channel.show(true);
+  channel.appendLine("Connecting to log stream…");
+
   try {
-    const logs = await listFunctionLogs({
-      functions: [resourceId!],
-      limit: 200,
-    });
+    const stream = streamFunctionLogs(
+      { functions: [resourceId!] },
+      {
+        onInitialBatch: () => {
+          channel.clear();
+        },
 
-    const channel = getOrCreateChannel(resourceId!, label);
-    channel.clear();
+        onInsert: (log) => {
+          channel.appendLine(formatLog(log));
+        },
 
-    if (logs.length === 0) {
-      channel.appendLine("No logs found for this function.");
-    } else {
-      // Show newest last
-      const sorted = [...logs].sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      );
-      for (const log of sorted) {
-        channel.appendLine(formatLog(log));
-      }
-    }
+        onError: (err) => {
+          channel.appendLine(`[Stream error] ${err.message}`);
+        },
 
-    channel.show(true);
+        onClose: () => {
+          activeStreams.delete(resourceId!);
+        },
+      },
+    );
+
+    activeStreams.set(resourceId!, stream);
   } catch (err) {
-    showApiError(err, "Failed to fetch logs");
+    showApiError(err, "Failed to start log stream");
   }
 }
 
 /**
- * Dispose all log output channels.
+ * Dispose all log output channels and stop all active streams.
  */
 export function disposeLogChannels(): void {
+  for (const stream of activeStreams.values()) {
+    stream.dispose();
+  }
+  activeStreams.clear();
+
   for (const channel of channels.values()) {
     channel.dispose();
   }

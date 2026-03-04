@@ -140,6 +140,25 @@ export class SpicaClient {
   }
 
   /**
+   * Returns the WebSocket URL and auth headers for a given API path.
+   * The base URL scheme (http/https) is converted to ws/wss automatically.
+   */
+  getWsConnectionOptions(
+    path: string,
+    query?: URLSearchParams,
+  ): { url: string } {
+    const wsBase = this._baseUrl.replace("http", "ws");
+
+    query?.append("Authorization", `${this._authScheme} ${this._token}`);
+
+    const qs = query?.toString();
+    const url = `${wsBase}${path}${qs ? "?" + qs : ""}`;
+    return {
+      url,
+    };
+  }
+
+  /**
    * Extracts an array from API responses that may be either a plain array
    * or a paginated wrapper like { data: [...], meta: {...} }.
    */
