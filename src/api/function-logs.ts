@@ -169,7 +169,7 @@ export interface LogStream {
 
 export interface LogStreamCallbacks {
   /** Called once after all Initial chunks have been received. */
-  onInitialBatch: () => void;
+  onInitialBatch: (logs: FunctionLog[]) => void;
   /** Called when a new log is inserted. */
   onInsert: (log: FunctionLog) => void;
   /** Called on WebSocket or protocol error. */
@@ -214,7 +214,7 @@ export function streamFunctionLogs(
 
       case ChunkKind.EndOfInitial:
         initialPhase = false;
-        callbacks.onInitialBatch();
+        callbacks.onInitialBatch(data.toArray());
         break;
 
       case ChunkKind.Insert:

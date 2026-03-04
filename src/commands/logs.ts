@@ -4,11 +4,12 @@ import { streamFunctionLogs, type LogStream } from "../api/function-logs.js";
 import { showApiError } from "../utils/errors.js";
 import type { FunctionLog } from "../models/types.js";
 
-const LOG_LEVEL_NAMES: Record<number, string> = {
-  0: "ERROR",
-  1: "WARN",
-  2: "INFO",
-  3: "DEBUG",
+const LOG_LEVEL_ICONS: Record<number, string> = {
+  0: "🐛",
+  1: "💬",
+  2: "ℹ️",
+  3: "⚠️",
+  4: "❌",
 };
 
 // Keep a map of output channels by function id
@@ -30,8 +31,8 @@ function getOrCreateChannel(
 
 function formatLog(log: FunctionLog): string {
   const ts = new Date(log.created_at).toLocaleString();
-  const level = LOG_LEVEL_NAMES[log.level] ?? `L${log.level}`;
-  return `[${ts}] [${level}] ${log.content}`;
+  const level = LOG_LEVEL_ICONS[log.level] ?? `L${log.level}`;
+  return `[${ts}] ${level} ${log.content}`;
 }
 
 /**
@@ -60,10 +61,17 @@ export async function viewLogsCommand(item: SpicaTreeItem): Promise<void> {
 
   try {
     const stream = streamFunctionLogs(
-      { functions: [resourceId!] },
       {
-        onInitialBatch: () => {
+        functions: [resourceId!],
+        begin: new Date().toISOString(), // only stream new logs
+      },
+      {
+        onInitialBatch: (logs) => {
           channel.clear();
+          console.log(logs);
+          for (const log of logs) {
+            channel.appendLine(formatLog(log));
+          }
         },
 
         onInsert: (log) => {
