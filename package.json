@@ -2,7 +2,7 @@
   "name": "spica-vscode",
   "displayName": "Spica",
   "description": "Manage your Spica backend engine resources directly from VS Code",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "tunakucukertas",
   "engines": {
     "vscode": "^1.85.0"
@@ -164,6 +164,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "node esbuild.js --production",
+    "package:vsix": "npm run build && npx vsce package",
     "watch": "node esbuild.js --watch",
     "lint": "eslint src --ext ts",
     "compile": "tsc -p ./"
@@ -173,7 +174,8 @@
     "@types/vscode": "^1.85.0",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.20.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vsce": "^2.10.0"
   },
   "dependencies": {
     "ws": "^8.19.0"
