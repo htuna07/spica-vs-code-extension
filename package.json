@@ -98,6 +98,12 @@
         "icon": "$(debug)"
       },
       {
+        "command": "spica.streamAllLogs",
+        "title": "Stream All Function Logs",
+        "category": "Spica",
+        "icon": "$(debug)"
+      },
+      {
         "command": "spica.editEnvVar",
         "title": "Edit Environment Variable",
         "category": "Spica"
@@ -139,7 +145,12 @@
         },
         {
           "command": "spica.viewLogs",
-          "when": "view == spicaExplorer && viewItem =~ /loggable/",
+          "when": "view == spicaExplorer && viewItem =~ /\\.loggable/",
+          "group": "inline@5"
+        },
+        {
+          "command": "spica.streamAllLogs",
+          "when": "view == spicaExplorer && viewItem =~ /all-loggable/",
           "group": "inline@5"
         },
         {

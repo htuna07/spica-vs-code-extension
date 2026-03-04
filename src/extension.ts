@@ -19,7 +19,11 @@ import {
   openJsonEditorCommand,
 } from "./commands/resource.js";
 import { refreshCommand } from "./commands/refresh.js";
-import { viewLogsCommand, disposeLogChannels } from "./commands/logs.js";
+import {
+  viewLogsCommand,
+  streamAllLogsCommand,
+  disposeLogChannels,
+} from "./commands/logs.js";
 import {
   addResourceCommand,
   editResourceFormCommand,
@@ -119,6 +123,12 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand("spica.viewLogs", (item: SpicaTreeItem) =>
       viewLogsCommand(item),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("spica.streamAllLogs", () =>
+      streamAllLogsCommand(),
     ),
   );
 

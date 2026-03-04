@@ -82,6 +82,9 @@ export class SpicaTreeItem extends vscode.TreeItem {
     switch (this.data.nodeType) {
       case NodeType.Module:
         parts.push("module", "refreshable", "addable");
+        if (this.data.moduleType === ModuleType.Functions) {
+          parts.push("all-loggable");
+        }
         break;
       case NodeType.Resource:
         parts.push("resource", "refreshable", "editable", "deletable");
