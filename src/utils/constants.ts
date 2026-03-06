@@ -19,16 +19,22 @@ export enum ModuleType {
   Buckets = "buckets",
   Functions = "functions",
   Policies = "policies",
+  EnvVars = "env-vars",
+  Secrets = "secrets",
 }
 
 export const MODULE_LABELS: Record<ModuleType, string> = {
   [ModuleType.Buckets]: "Buckets",
   [ModuleType.Functions]: "Functions",
   [ModuleType.Policies]: "Policies",
+  [ModuleType.EnvVars]: "Environment Variables",
+  [ModuleType.Secrets]: "Secrets",
 };
 
 export const MODULE_ICONS: Record<ModuleType, string> = {
   [ModuleType.Buckets]: "database",
   [ModuleType.Functions]: "symbol-function",
   [ModuleType.Policies]: "shield",
+  [ModuleType.EnvVars]: "symbol-variable",
+  [ModuleType.Secrets]: "lock",
 };

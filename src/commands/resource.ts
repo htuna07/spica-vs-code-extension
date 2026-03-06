@@ -16,6 +16,8 @@ import {
 } from "../api/functions.js";
 import { deletePolicy } from "../api/policies.js";
 import type { FunctionInput } from "../models/types.js";
+import { deleteEnvVar } from "../api/env-vars.js";
+import { deleteSecret } from "../api/secrets.js";
 
 /**
  * Open a resource in the editor via the spica: file system.
@@ -159,17 +161,6 @@ async function performDelete(
     return;
   }
 
-  // Environment variable deletion
-  if (subKind === "env-var" && parentId) {
-    const func = await getFunction(parentId);
-    const env = { ...((func.env as Record<string, string>) ?? {}) };
-    delete env[resourceId];
-    const { _id, ...input } = func as unknown as Record<string, unknown>;
-    (input as unknown as FunctionInput).env = env;
-    await replaceFunction(parentId, input as unknown as FunctionInput);
-    return;
-  }
-
   // Top-level resource deletion
   switch (moduleType) {
     case ModuleType.Buckets:
@@ -180,6 +171,12 @@ async function performDelete(
       return;
     case ModuleType.Policies:
       await deletePolicy(resourceId);
+      return;
+    case ModuleType.EnvVars:
+      await deleteEnvVar(resourceId);
+      return;
+    case ModuleType.Secrets:
+      await deleteSecret(resourceId);
       return;
   }
 }

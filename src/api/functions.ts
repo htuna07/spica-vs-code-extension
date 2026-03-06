@@ -80,3 +80,37 @@ export async function removeFunctionDependency(
 ): Promise<void> {
   return client.delete(`/function/${id}/dependencies/${name}`);
 }
+
+// ── Env Var & Secret injection ──────────────────────────────────────
+
+export async function injectEnvVar(
+  functionId: string,
+  envVarId: string,
+): Promise<SpicaFunction> {
+  return client.put<SpicaFunction>(
+    `/function/${functionId}/env-var/${envVarId}`,
+  );
+}
+
+export async function ejectEnvVar(
+  functionId: string,
+  envVarId: string,
+): Promise<void> {
+  return client.delete(`/function/${functionId}/env-var/${envVarId}`);
+}
+
+export async function injectSecret(
+  functionId: string,
+  secretId: string,
+): Promise<SpicaFunction> {
+  return client.put<SpicaFunction>(
+    `/function/${functionId}/secret/${secretId}`,
+  );
+}
+
+export async function ejectSecret(
+  functionId: string,
+  secretId: string,
+): Promise<void> {
+  return client.delete(`/function/${functionId}/secret/${secretId}`);
+}

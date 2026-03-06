@@ -11,7 +11,7 @@ export enum NodeType {
   Resource = "resource",
   /** A sub-module container within a resource (e.g., Dependencies under a Function) */
   SubModule = "submodule",
-  /** A leaf node (document, policy, dependency entry, source code) */
+  /** A leaf node (document, policy, env var, secret, dependency entry, source code) */
   Leaf = "leaf",
 }
 
@@ -120,8 +120,12 @@ export class SpicaTreeItem extends vscode.TreeItem {
         ) {
           parts.push("deletable");
         }
-        // Simple resources (policies) are deletable
-        if (this.data.moduleType === ModuleType.Policies) {
+        // Simple resources (policies, env vars, secrets) are deletable
+        if (
+          this.data.moduleType === ModuleType.Policies ||
+          this.data.moduleType === ModuleType.EnvVars ||
+          this.data.moduleType === ModuleType.Secrets
+        ) {
           parts.push("deletable");
         }
         // Policies are also editable via the structured form
@@ -175,6 +179,8 @@ export class SpicaTreeItem extends vscode.TreeItem {
       [ModuleType.Buckets]: "database",
       [ModuleType.Functions]: "symbol-function",
       [ModuleType.Policies]: "shield",
+      [ModuleType.EnvVars]: "symbol-variable",
+      [ModuleType.Secrets]: "lock",
     };
     return map[mod] || "folder";
   }
@@ -187,6 +193,10 @@ export class SpicaTreeItem extends vscode.TreeItem {
         return "zap";
       case ModuleType.Policies:
         return "law";
+      case ModuleType.EnvVars:
+        return "symbol-variable";
+      case ModuleType.Secrets:
+        return "key";
       default:
         return "file";
     }
