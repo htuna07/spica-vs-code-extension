@@ -57,7 +57,7 @@ export class SpicaClient {
   async healthCheck(url: string): Promise<boolean> {
     try {
       const cleanUrl = url.replace(/\/+$/, "");
-      const resp = await fetch(`${cleanUrl}/passport/strategies`, {
+      const resp = await fetch(`${cleanUrl}/status/ready`, {
         method: "GET",
       });
       return resp.ok;
